@@ -1,0 +1,5 @@
+1. 本地启动 neo4j的medicine图数据库
+
+2. ollama本地启动大模型，这里webui.py中配置的是 deepseek-r1:8b和qwen2.5:7b
+
+3. 运行webui界面： streamlit run login.py
