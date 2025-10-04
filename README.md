@@ -3,6 +3,8 @@
 本项目使用的数据集来源于[Open-KG](http://data.openkg.cn/dataset/disease-information)，参考了[RAGOnMedicalKG](https://github.com/liuhuanyong/RAGOnMedicalKG)、[QASystemOnMedicalKG](https://github.com/liuhuanyong/QASystemOnMedicalKG)
 
 ## 介绍
+本项目在本地复现了RAGQnASystem项目，并计划基于此项目后续进行迭代演进。
+neo4j和大模型均可采用本地的服务，已测试通过。
 
 本项目整体流程：
 
