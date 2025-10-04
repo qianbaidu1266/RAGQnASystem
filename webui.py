@@ -13,7 +13,7 @@ import re
 
 @st.cache_resource
 def load_model(cache_model):
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     #加载ChatGLM模型
     # glm_tokenizer = AutoTokenizer.from_pretrained("model/chatglm3-6b-128k", trust_remote_code=True)
     # glm_model = AutoModel.from_pretrained("model/chatglm3-6b-128k",trust_remote_code=True,device=device)
@@ -29,7 +29,8 @@ def load_model(cache_model):
     model_name = 'model/chinese-roberta-wwm-ext'
     bert_tokenizer = BertTokenizer.from_pretrained(model_name)
     bert_model = zwk.Bert_Model(model_name, hidden_size=128, tag_num=len(tag2idx), bi=True)
-    bert_model.load_state_dict(torch.load(f'model/{cache_model}.pt'))
+    bert_model.load_state_dict(torch.load(f'model/{cache_model}.pt', map_location='cpu'))
+    #bert_model.load_state_dict(torch.load(f'model/{cache_model}.pt', map_location='cuda:0'))
     
     bert_model = bert_model.to(device)
     bert_model.eval()
@@ -108,6 +109,7 @@ def Intent_Recognition(query,choice):
 输出的时候请确保输出内容都在**查询类别**中出现过。确保输出类别个数**不要超过5个**！确保你的解释和合乎逻辑的！注意，如果用户询问了有关疾病的问题，一般都要先介绍一下疾病，也就是有"查询疾病简介"这个需求。
 再次检查你的输出都包含在**查询类别**:"查询疾病简介"、"查询疾病病因"、"查询疾病预防措施"、"查询疾病治疗周期"、"查询治愈概率"、"查询疾病易感人群"、"查询疾病所需药品"、"查询疾病宜吃食物"、"查询疾病忌吃食物"、"查询疾病所需检查项目"、"查询疾病所属科目"、"查询疾病的症状"、"查询疾病的治疗方法"、"查询疾病的并发疾病"、"查询药品的生产商"。
 """
+    print("choice:", choice)
     rec_result = ollama.generate(model=choice, prompt=prompt)['response']
     print(f'意图识别结果:{rec_result}')
     return rec_result
@@ -289,9 +291,15 @@ def main(is_admin, usname):
 
         selected_option = st.selectbox(
             label='请选择大语言模型:',
-            options=['Qwen 1.5', 'Llama2-Chinese']
+            options=['qwen2.5:7b', 'deepseek-r1:8b','qwen3:4B']
         )
-        choice = 'qwen:32b' if selected_option == 'Qwen 1.5' else 'llama2-chinese:13b-chat-q8_0'
+        #choice = 'qwen2.5:7b' if selected_option == 'qwen2.5:7b' else 'deepseek-r1:8b'
+        model_map = {
+            'qwen2.5:7b': 'qwen2.5:7b',
+            'deepseek-r1:8b': 'deepseek-r1:8b',
+            'qwen3:4B': 'qwen3:4B'
+        }
+        choice = model_map[selected_option]
 
         show_ent = show_int = show_prompt = False
         if is_admin:
@@ -300,7 +308,7 @@ def main(is_admin, usname):
             show_prompt = st.sidebar.checkbox("显示查询的知识库信息")
             if st.button('修改知识图谱'):
             # 显示一个链接，用户可以点击这个链接在新标签页中打开百度
-                st.markdown('[点击这里修改知识图谱](http://127.0.0.1:7474/)', unsafe_allow_html=True)
+                st.markdown('[点击这里修改知识图谱](bolt://localhost:7687)', unsafe_allow_html=True)
 
 
 
@@ -310,7 +318,7 @@ def main(is_admin, usname):
             st.experimental_rerun()
 
     glm_tokenizer, glm_model, bert_tokenizer, bert_model, idx2tag, rule, tfidf_r, device = load_model(cache_model)
-    client = py2neo.Graph('http://localhost:7474', user='neo4j', password='wei8kang7.long', name='neo4j')
+    client = py2neo.Graph('bolt://localhost:7687', user='neo4j', password='12345678', name='medicine')
 
     current_messages = st.session_state.messages[active_window_index]
 
